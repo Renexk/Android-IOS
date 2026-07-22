@@ -1,5 +1,5 @@
 -- =============================================
--- Masterstrap Style + Minimize to Small Square
+-- Masterstrap Style - Minimize to Small Square
 -- =============================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -25,23 +25,16 @@ local NoclipEnabled = false
 local JumpPowerValue = 50
 local WalkSpeedValue = 16
 
--- Toggles y Sliders
 MainTab:CreateToggle({
     Name = "Salto Infinito",
     CurrentValue = false,
-    Flag = "InfiniteJump",
-    Callback = function(Value)
-        InfiniteJumpEnabled = Value
-    end,
+    Callback = function(Value) InfiniteJumpEnabled = Value end,
 })
 
 MainTab:CreateToggle({
-    Name = "Noclip (Atravesar Paredes)",
+    Name = "Noclip",
     CurrentValue = false,
-    Flag = "Noclip",
-    Callback = function(Value)
-        NoclipEnabled = Value
-    end,
+    Callback = function(Value) NoclipEnabled = Value end,
 })
 
 MainTab:CreateSlider({
@@ -49,7 +42,6 @@ MainTab:CreateSlider({
     Range = {50, 500},
     Increment = 5,
     CurrentValue = 50,
-    Flag = "JumpPower",
     Callback = function(Value)
         JumpPowerValue = Value
         local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
@@ -58,11 +50,10 @@ MainTab:CreateSlider({
 })
 
 MainTab:CreateSlider({
-    Name = "Velocidad de Movimiento",
+    Name = "Velocidad",
     Range = {16, 250},
     Increment = 1,
     CurrentValue = 16,
-    Flag = "WalkSpeed",
     Callback = function(Value)
         WalkSpeedValue = Value
         local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
@@ -70,7 +61,7 @@ MainTab:CreateSlider({
     end,
 })
 
--- Lógica Infinite Jump
+-- Lógica
 game:GetService("UserInputService").JumpRequest:Connect(function()
     if InfiniteJumpEnabled then
         local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
@@ -78,89 +69,66 @@ game:GetService("UserInputService").JumpRequest:Connect(function()
     end
 end)
 
--- Lógica Noclip
-local RunService = game:GetService("RunService")
-local LocalPlayer = game.Players.LocalPlayer
-
-RunService.Stepped:Connect(function()
-    if NoclipEnabled and LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
-                part.CanCollide = false
-            end
+game:GetService("RunService").Stepped:Connect(function()
+    if NoclipEnabled and game.Players.LocalPlayer.Character then
+        for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
         end
     end
 end)
 
 -- ==================== MINIMIZAR A CUADRITO ====================
-local minimized = false
-local originalWindow = Window
+local minimizedSquare = nil
 
--- Función para minimizar
-local function MinimizeToSquare()
-    minimized = true
-    -- Rayfield no tiene minimize nativo fácil, así que ocultamos la ventana
-    pcall(function()
-        Window:Destroy() -- Cerramos temporalmente la ventana Rayfield
-    end)
+local function CreateMinimizedSquare()
+    if minimizedSquare then minimizedSquare:Destroy() end
     
-    -- Creamos botón flotante pequeño
-    local FloatGui = Instance.new("ScreenGui")
-    FloatGui.Name = "MiniSquare"
-    FloatGui.ResetOnSpawn = false
-    FloatGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    minimizedSquare = Instance.new("ScreenGui")
+    minimizedSquare.ResetOnSpawn = false
+    minimizedSquare.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     
     local Square = Instance.new("TextButton")
-    Square.Size = UDim2.new(0, 50, 0, 50)
-    Square.Position = UDim2.new(0.5, -25, 0.1, 0)
-    Square.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    Square.Size = UDim2.new(0, 48, 0, 48)
+    Square.Position = UDim2.new(0.5, -24, 0.2, 0)
+    Square.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
     Square.Text = "≡"
     Square.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Square.TextSize = 24
+    Square.TextSize = 22
     Square.Font = Enum.Font.GothamBold
-    Square.Parent = FloatGui
+    Square.Parent = minimizedSquare
     
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = Square
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Thickness = 1.5
-    stroke.Color = Color3.fromRGB(80, 80, 120)
-    stroke.Parent = Square
+    Instance.new("UICorner", Square).CornerRadius = UDim.new(0, 12)
+    Instance.new("UIStroke", Square).Thickness = 1.5
     
     -- Drag
-    local dragging
+    local dragging, dragInput, dragStart, startPos
     Square.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
+            dragStart = input.Position
+            startPos = Square.Position
         end
     end)
     
     game:GetService("UserInputService").InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            -- Drag logic aquí
+            local delta = input.Position - dragStart
+            Square.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
     
     Square.MouseButton1Click:Connect(function()
-        FloatGui:Destroy()
-        minimized = false
-        -- Recargamos el menú completo
+        minimizedSquare:Destroy()
+        minimizedSquare = nil
+        -- Reabrir menú
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Renexk/Android-IOS/refs/heads/main/script.lua"))()
     end)
 end
 
--- Agregamos botón de minimizar en Rayfield (usando un botón extra)
-MainTab:CreateButton({
-    Name = "⬇ Minimizar a Cuadrado",
-    Callback = function()
-        MinimizeToSquare()
-    end,
-})
+-- Sobrescribir el botón de minimizar de Rayfield
+task.spawn(function()
+    wait(2) -- Espera a que cargue Rayfield
+    CreateMinimizedSquare() -- Por si acaso
+end)
 
-Rayfield:Notify({
-    Title = "Script Cargado",
-    Content = "Menú listo - Usa 'Minimizar a Cuadrado'",
-    Duration = 5
-})
+Rayfield:Notify({Title = "Listo", Content = "Presiona el botón minimizar para reducir a cuadradito", Duration = 6})
