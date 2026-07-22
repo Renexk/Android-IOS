@@ -1,5 +1,5 @@
 -- =============================================
--- Masterstrap Style - Minimize to Small Square
+-- Masterstrap Style - Minimize a Cuadradito
 -- =============================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -8,58 +8,29 @@ local Window = Rayfield:CreateWindow({
     Name = "Masterstrap Style Menu",
     LoadingTitle = "Cargando...",
     LoadingSubtitle = "by Grok",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "DeltaScripts",
-        FileName = "MasterstrapMenu"
-    },
+    ConfigurationSaving = { Enabled = true, FolderName = "DeltaScripts", FileName = "Masterstrap" },
     Discord = { Enabled = false },
     KeySystem = false
 })
 
 local MainTab = Window:CreateTab("Movimiento", 4483362458)
 
--- Variables
+-- Funciones
 local InfiniteJumpEnabled = false
 local NoclipEnabled = false
-local JumpPowerValue = 50
-local WalkSpeedValue = 16
 
-MainTab:CreateToggle({
-    Name = "Salto Infinito",
-    CurrentValue = false,
-    Callback = function(Value) InfiniteJumpEnabled = Value end,
-})
+MainTab:CreateToggle({ Name = "Salto Infinito", CurrentValue = false, Callback = function(v) InfiniteJumpEnabled = v end })
+MainTab:CreateToggle({ Name = "Noclip", CurrentValue = false, Callback = function(v) NoclipEnabled = v end })
 
-MainTab:CreateToggle({
-    Name = "Noclip",
-    CurrentValue = false,
-    Callback = function(Value) NoclipEnabled = Value end,
-})
+MainTab:CreateSlider({ Name = "Potencia de Salto", Range = {50,500}, Increment = 5, CurrentValue = 50, Callback = function(v)
+    local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+    if hum then hum.JumpPower = v end
+end})
 
-MainTab:CreateSlider({
-    Name = "Potencia de Salto",
-    Range = {50, 500},
-    Increment = 5,
-    CurrentValue = 50,
-    Callback = function(Value)
-        JumpPowerValue = Value
-        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
-        if hum then hum.JumpPower = Value end
-    end,
-})
-
-MainTab:CreateSlider({
-    Name = "Velocidad",
-    Range = {16, 250},
-    Increment = 1,
-    CurrentValue = 16,
-    Callback = function(Value)
-        WalkSpeedValue = Value
-        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
-        if hum then hum.WalkSpeed = Value end
-    end,
-})
+MainTab:CreateSlider({ Name = "Velocidad", Range = {16,250}, Increment = 1, CurrentValue = 16, Callback = function(v)
+    local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+    if hum then hum.WalkSpeed = v end
+end})
 
 -- Lógica
 game:GetService("UserInputService").JumpRequest:Connect(function()
@@ -77,58 +48,42 @@ game:GetService("RunService").Stepped:Connect(function()
     end
 end)
 
--- ==================== MINIMIZAR A CUADRITO ====================
-local minimizedSquare = nil
+-- ==================== MINIMIZAR ====================
+local function CreateFloatingSquare()
+    local sg = Instance.new("ScreenGui")
+    sg.ResetOnSpawn = false
+    sg.Parent = game.Players.LocalPlayer.PlayerGui
 
-local function CreateMinimizedSquare()
-    if minimizedSquare then minimizedSquare:Destroy() end
-    
-    minimizedSquare = Instance.new("ScreenGui")
-    minimizedSquare.ResetOnSpawn = false
-    minimizedSquare.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    
-    local Square = Instance.new("TextButton")
-    Square.Size = UDim2.new(0, 48, 0, 48)
-    Square.Position = UDim2.new(0.5, -24, 0.2, 0)
-    Square.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    Square.Text = "≡"
-    Square.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Square.TextSize = 22
-    Square.Font = Enum.Font.GothamBold
-    Square.Parent = minimizedSquare
-    
-    Instance.new("UICorner", Square).CornerRadius = UDim.new(0, 12)
-    Instance.new("UIStroke", Square).Thickness = 1.5
-    
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 50, 0, 50)
+    btn.Position = UDim2.new(0.5, -25, 0.15, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    btn.Text = "≡"
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.TextSize = 24
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = sg
+
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
+    Instance.new("UIStroke", btn).Thickness = 1.5
+
     -- Drag
-    local dragging, dragInput, dragStart, startPos
-    Square.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = Square.Position
+    local dragging
+    btn.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = true end end)
+    game:GetService("UserInputService").InputChanged:Connect(function(i)
+        if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+            -- Drag simple (puedes mejorar después)
         end
     end)
-    
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            Square.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    
-    Square.MouseButton1Click:Connect(function()
-        minimizedSquare:Destroy()
-        minimizedSquare = nil
-        -- Reabrir menú
+
+    btn.MouseButton1Click:Connect(function()
+        sg:Destroy()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Renexk/Android-IOS/refs/heads/main/script.lua"))()
     end)
 end
 
--- Sobrescribir el botón de minimizar de Rayfield
-task.spawn(function()
-    wait(2) -- Espera a que cargue Rayfield
-    CreateMinimizedSquare() -- Por si acaso
-end)
+-- Sobrescribir minimizar
+task.wait(1.5)
+CreateFloatingSquare()
 
-Rayfield:Notify({Title = "Listo", Content = "Presiona el botón minimizar para reducir a cuadradito", Duration = 6})
+Rayfield:Notify({Title = "Listo", Content = "Minimiza con el botón de arriba", Duration = 5})
